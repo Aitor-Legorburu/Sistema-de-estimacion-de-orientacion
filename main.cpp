@@ -33,6 +33,17 @@ bool radioNumber = 1;
 //Función para actualizar los leds. He cambiado el comportamiento de los leds. Voy a ir cambiando la sensibilidad hasta dar con 
 //la adecuada (por ahora solo la he ido bajando y bajando, no se hasta cuando lo tendre que bajar). Ahora los leds se encienden 
 //gradualmente en vez de de golpe.
+float kalman(float z) {
+    static double estado = 0.0;
+    static double varianza = 1.0;
+    const double Q = 0.01, R = 0.1;
+    
+    double K = (varianza + Q) / (varianza + Q + R);
+    estado = estado + K * (z - estado);
+    varianza = (1 - K) * (varianza + Q);
+    return estado;
+}
+
 void caida_(){
   float primer_valor;
   float segundo_valor;
@@ -138,7 +149,7 @@ void loop() {
     mpu.dmpGetAccel(&aa, fifoBuffer);
     mpu.dmpGetGravity(&gravity, &q);
     mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-    caida = (atan(gravity.y/gravity.z)*180/PI) - error_x;
+    caida = kalman((atan(gravity.y/gravity.z)*180/PI) - error_x);
     ace_x = aaReal.x;
     giro_y = (atan(gravity.x/gravity.z)*180/PI) - error_y;
     datos [0] = caida;
